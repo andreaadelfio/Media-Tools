@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "media-browser-suite"
+version = "0.1.0"
+description = "Unified browser UI for image, video, and audio manipulation tools."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "opencv-python>=4.10.0",
+    "numpy>=1.26.0",
+    "pillow>=10.4.0",
+    "imageio>=2.34.0",
+    "librosa>=0.10.2",
+    "scipy>=1.14.0",
+    "soundfile>=0.12.1",
+    "birdnetlib>=0.17.0",
+    "wikipedia-api>=0.6.0",
+    "tensorflow>=2.16.0",
+]
+
+[project.scripts]
+media-browser-suite = "media_suite.launcher:main"
+media-browser-dev = "media_suite.launcher:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["media_suite*"]
+
+[tool.setuptools.package-data]
+media_suite = ["static/*"]

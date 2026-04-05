@@ -1,0 +1,1 @@
+"""Media Browser Suite package."""

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Media Browser Suite</title>
+  <link rel="stylesheet" href="/static/styles.css?v=14">
+</head>
+<body>
+  <div class="shell">
+    <main class="layout">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Tools</h2>
+          <button id="toggle-tools" type="button">Chiudi</button>
+        </div>
+        <div id="tool-list" class="tool-list"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>File</h2>
+          <button id="refresh-files" type="button">Aggiorna</button>
+        </div>
+        <form id="root-form" class="inline-root-form">
+          <label for="root-path">Root attiva</label>
+          <div class="root-row">
+            <input id="root-path" name="root-path" type="text" placeholder="C:\Percorso\Alla\Cartella">
+            <button id="pick-root" type="button">Sfoglia</button>
+            <button type="submit">Apri</button>
+          </div>
+        </form>
+        <div id="session-banner" class="banner muted">Nessuna cartella selezionata.</div>
+        <div id="file-filter-banner" class="banner muted">Seleziona un tool per filtrare i file compatibili.</div>
+        <div id="file-list" class="file-list"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Esecuzione</h2>
+        </div>
+        <div class="execution-body">
+          <div id="active-tool" class="active-tool muted">Seleziona uno strumento.</div>
+          <form id="tool-form" class="tool-form"></form>
+          <button id="run-tool" type="button" class="run-button" disabled>Esegui endpoint</button>
+          <div id="result-box" class="result-box">Qui compariranno risultati, output e eventuali errori.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/app.js?v=14"></script>
+</body>
+</html>
