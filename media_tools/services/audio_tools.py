@@ -64,7 +64,7 @@ class SpeciesCatalog:
         self._wiki = wikipediaapi.Wikipedia(
             language="it",
             extract_format=wikipediaapi.ExtractFormat.HTML,
-            user_agent="media-browser-suite",
+            user_agent="media-tools",
         )
         self.load()
 

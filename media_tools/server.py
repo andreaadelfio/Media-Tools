@@ -64,7 +64,7 @@ if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {{
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="Media Browser Suite")
+    app = FastAPI(title="Media Tools")
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
     @app.get("/", response_class=HTMLResponse)

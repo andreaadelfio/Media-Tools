@@ -24,7 +24,7 @@ IGNORED_DIR_NAMES = {
     ".pytest_cache",
     "__pycache__",
     "node_modules",
-    "media_suite_output",
+    "media_tools_output",
     "workspace",
 }
 

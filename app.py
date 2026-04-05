@@ -1,5 +1,5 @@
-from media_suite.launcher import main
-from media_suite.server import create_app
+from media_tools.launcher import main
+from media_tools.server import create_app
 
 
 app = create_app()

@@ -4,11 +4,11 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-STATIC_DIR = PROJECT_ROOT / "media_suite" / "static"
+STATIC_DIR = PROJECT_ROOT / "media_tools" / "static"
 WORKSPACE_DIR = PROJECT_ROOT / "workspace"
-DEFAULT_OUTPUT_DIRNAME = "media_suite_output"
+DEFAULT_OUTPUT_DIRNAME = "media_tools_output"
 DEFAULT_SPECIES_FILE = PROJECT_ROOT / "species_names.txt"
-GLOBAL_CACHE_DIR = Path.home() / ".media-browser-suite"
+GLOBAL_CACHE_DIR = Path.home() / ".media-tools"
 THUMBNAIL_CACHE_DIR = GLOBAL_CACHE_DIR / "thumbnails"
 THUMBNAIL_INDEX_FILE = GLOBAL_CACHE_DIR / "thumbnail_index.json"
 
