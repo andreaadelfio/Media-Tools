@@ -58,6 +58,21 @@ oppure i launcher del repository:
 .\media-tools.cmd
 ```
 
+Per sviluppo sul repo corrente, senza reinstallare il venv utente a ogni modifica:
+
+```powershell
+make dev
+```
+
+oppure su Windows:
+
+```powershell
+.\run_media_tools_dev.bat
+```
+
+Questa modalita usa il Python del venv installato in `%LOCALAPPDATA%\MediaTools`, ma forza `PYTHONPATH` e working directory sul repository aperto, quindi usa direttamente il codice locale del repo.
+Per default gira su `http://127.0.0.1:8766`, cosi non collide con l'istanza standard su `8765`.
+
 Questi launcher usano solo l'installazione utente dedicata e non creano o riusano un `.venv` locale nel repository.
 
 Se vuoi comunque attivare manualmente il venv installato:
