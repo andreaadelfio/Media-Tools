@@ -4,20 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Media Tools</title>
-  <link rel="stylesheet" href="/static/styles.css?v=14">
+  <link rel="stylesheet" href="/static/styles.css?v=22">
 </head>
 <body>
   <div class="shell">
-    <main class="layout">
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Tools</h2>
-          <button id="toggle-tools" type="button">Chiudi</button>
-        </div>
-        <div id="tool-list" class="tool-list"></div>
-      </section>
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <div class="sidebar-brand">MediaTools</div>
+        <button id="toggle-tools" type="button" class="sidebar-toggle">Chiudi</button>
+      </div>
+      <div class="sidebar-section-label">Tools</div>
+      <div id="tool-list" class="tool-list"></div>
+    </aside>
 
-      <section class="panel">
+    <main class="layout">
+      <section class="panel file-panel">
         <div class="panel-head">
           <h2>File</h2>
           <button id="refresh-files" type="button">Aggiorna</button>
@@ -35,7 +36,7 @@
         <div id="file-list" class="file-list"></div>
       </section>
 
-      <section class="panel">
+      <section class="panel execution-panel">
         <div class="panel-head">
           <h2>Esecuzione</h2>
         </div>
@@ -49,6 +50,6 @@
     </main>
   </div>
 
-  <script src="/static/app.js?v=14"></script>
+  <script src="/static/app.js?v=22"></script>
 </body>
 </html>

@@ -25,7 +25,6 @@ IGNORED_DIR_NAMES = {
     "__pycache__",
     "node_modules",
     "media_tools_output",
-    "workspace",
 }
 
 _THUMBNAIL_INDEX_CACHE: dict | None = None

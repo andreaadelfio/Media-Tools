@@ -10,9 +10,9 @@ from .server import create_app
 
 
 def main() -> None:
-    host = os.environ.get("MEDIA_TOOLS_HOST") or os.environ.get("MEDIA_BROWSER_HOST", "127.0.0.1")
-    port = int(os.environ.get("MEDIA_TOOLS_PORT") or os.environ.get("MEDIA_BROWSER_PORT", "8765"))
-    open_browser = (os.environ.get("MEDIA_TOOLS_OPEN") or os.environ.get("MEDIA_BROWSER_OPEN", "1")) != "0"
+    host = os.environ.get("MEDIA_TOOLS_HOST", "127.0.0.1")
+    port = int(os.environ.get("MEDIA_TOOLS_PORT", "8765"))
+    open_browser = os.environ.get("MEDIA_TOOLS_OPEN", "1") != "0"
     url = f"http://{host}:{port}"
 
     if open_browser:

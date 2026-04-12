@@ -2,5 +2,8 @@ __pycache__/
 *.pyc
 .venv/
 .pytest_cache/
-media_suite_output/
-workspace/
+media_tools.egg-info/
+media_tools_output/
+.codex
+*/__pycache__/
+*/*/__pycache__/

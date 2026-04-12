@@ -6,10 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from ..config import PROJECT_ROOT
-
-
-BIRD_AUDIO_CLI = PROJECT_ROOT.parent / "Bird Audio Suite" / "bird_audio_cli.py"
+BIRD_AUDIO_CLI = Path(__file__).with_name("audio_live_worker.py")
 
 
 @dataclass
@@ -37,7 +34,8 @@ def build_live_command(
 ) -> list[str]:
     command = [
         sys.executable,
-        str(BIRD_AUDIO_CLI),
+        "-m",
+        "media_tools.services.audio_live_worker",
         "live",
         "--backend",
         backend,
@@ -86,7 +84,7 @@ def start_live_process(
         return {"message": "Bird Audio Live e' gia attivo.", **status}
 
     if not BIRD_AUDIO_CLI.exists():
-        raise FileNotFoundError(f"Bird Audio Suite non trovato: {BIRD_AUDIO_CLI}")
+        raise FileNotFoundError(f"Worker Bird Audio Live non trovato: {BIRD_AUDIO_CLI}")
 
     detections_dir.mkdir(parents=True, exist_ok=True)
     log_path = detections_dir / "bird_audio_live.log"
@@ -106,7 +104,6 @@ def start_live_process(
         command,
         stdout=log_handle,
         stderr=subprocess.STDOUT,
-        cwd=str(BIRD_AUDIO_CLI.parent.parent),
     )
     LIVE_PROCESS.process = process
     LIVE_PROCESS.log_path = log_path

@@ -7,11 +7,19 @@ import numpy as np
 from PIL import Image, PngImagePlugin, UnidentifiedImageError
 
 
+PARAMETER_MIN = 0.0
+PARAMETER_MAX = 1.5
 TEST_CROP_SIZE_RATIO = 0.2
 
 
 def clamp(value: float, low: float, high: float) -> float:
     return max(low, min(high, value))
+
+
+def probe_values(low: float, high: float, margin: float) -> list[float]:
+    margin = clamp(margin, 0.0, (high - low) / 2.0)
+    values = [round(low + margin, 2), round(high - margin, 2)]
+    return [values[0]] if values[0] == values[1] else values
 
 
 def load_source_metadata(source: Path) -> dict:
@@ -61,7 +69,7 @@ def save_image_with_metadata(image: np.ndarray, destination: Path, metadata: dic
 
 
 def reduce_digital_noise(image: np.ndarray, denoise: float) -> np.ndarray:
-    denoise = clamp(denoise, 0.0, 1.5)
+    denoise = clamp(denoise, PARAMETER_MIN, PARAMETER_MAX)
     if denoise <= 0.0:
         return image
 
@@ -88,7 +96,7 @@ def reduce_digital_noise(image: np.ndarray, denoise: float) -> np.ndarray:
 
 
 def sharpen_edges(image: np.ndarray, sharpen: float) -> np.ndarray:
-    sharpen = clamp(sharpen, 0.0, 1.5)
+    sharpen = clamp(sharpen, PARAMETER_MIN, PARAMETER_MAX)
     if sharpen <= 0.0:
         return image
     gray = cv2.cvtColor((image * 255.0).astype(np.uint8), cv2.COLOR_BGR2GRAY)
@@ -101,6 +109,16 @@ def sharpen_edges(image: np.ndarray, sharpen: float) -> np.ndarray:
     detail = image - blurred
     amount = 0.35 + 0.55 * sharpen
     return np.clip(image + detail * amount * edge_mask[..., None], 0.0, 1.0)
+
+
+def build_denoised_base(image: np.ndarray, denoise: float) -> np.ndarray:
+    working = image.astype(np.float32) / 255.0
+    return reduce_digital_noise(working, denoise)
+
+
+def render_processed_image(denoised_base: np.ndarray, sharpen: float) -> np.ndarray:
+    working = sharpen_edges(denoised_base, sharpen)
+    return np.clip(working * 255.0, 0.0, 255.0).astype(np.uint8)
 
 
 def find_sharp_crop_centers(image: np.ndarray, crop_count: int = 1) -> list[tuple[int, int]]:
@@ -158,14 +176,73 @@ def process_photo(source: Path, output_dir: Path, denoise: float, sharpen: float
     output_dir.mkdir(parents=True, exist_ok=True)
     destination = output_dir / f"{source.stem}_final{source.suffix.lower()}"
 
-    working = image.astype(np.float32) / 255.0
-    processed = sharpen_edges(reduce_digital_noise(working, denoise), sharpen)
-    rendered = np.clip(processed * 255.0, 0.0, 255.0).astype(np.uint8)
+    denoised_base = build_denoised_base(image, denoise)
+    rendered = render_processed_image(denoised_base, sharpen)
     save_image_with_metadata(rendered, destination, metadata)
 
     crop_paths: list[str] = []
     if test_crops:
-        for crop in save_test_crops(rendered, output_dir / f"{destination.stem}_test", destination.stem, source.suffix.lower(), metadata):
+        crop_dir = output_dir / f"{destination.stem}_test"
+        for crop in save_test_crops(rendered, crop_dir, destination.stem, source.suffix.lower(), metadata):
             crop_paths.append(str(crop))
 
-    return {"input": str(source), "output": str(destination), "test_crops": crop_paths}
+    return {
+        "mode": "definitive",
+        "input": str(source),
+        "output": str(destination),
+        "denoise": denoise,
+        "sharpen": sharpen,
+        "test_crops": crop_paths,
+    }
+
+
+def process_photo_test(source: Path, output_dir: Path, probe_margin: float, test_crops: bool) -> dict:
+    image = cv2.imread(str(source), cv2.IMREAD_COLOR)
+    if image is None:
+        raise ValueError(f"Impossibile leggere l'immagine: {source}")
+    metadata = load_source_metadata(source)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    original_copy = output_dir / f"original{source.suffix.lower()}"
+    save_image_with_metadata(image, original_copy, metadata)
+
+    denoise_values = probe_values(PARAMETER_MIN, PARAMETER_MAX, probe_margin)
+    sharpen_values = probe_values(PARAMETER_MIN, PARAMETER_MAX, probe_margin)
+    denoised_cache: dict[float, np.ndarray] = {}
+    variants: list[dict] = []
+    crop_paths: list[str] = []
+
+    for denoise in denoise_values:
+        if denoise not in denoised_cache:
+            denoised_cache[denoise] = build_denoised_base(image, denoise)
+        denoised_base = denoised_cache[denoise]
+        for sharpen in sharpen_values:
+            rendered = render_processed_image(denoised_base, sharpen)
+            destination = output_dir / f"denoise_{denoise:.1f}_sharpen_{sharpen:.1f}{source.suffix.lower()}"
+            save_image_with_metadata(rendered, destination, metadata)
+            variants.append(
+                {
+                    "output": str(destination),
+                    "denoise": denoise,
+                    "sharpen": sharpen,
+                }
+            )
+            if test_crops:
+                crop_dir = output_dir / "test"
+                for crop in save_test_crops(
+                    rendered,
+                    crop_dir,
+                    f"denoise_{denoise:.1f}_sharpen_{sharpen:.1f}",
+                    source.suffix.lower(),
+                    metadata,
+                ):
+                    crop_paths.append(str(crop))
+
+    return {
+        "mode": "test",
+        "input": str(source),
+        "output_dir": str(output_dir),
+        "original": str(original_copy),
+        "variants": variants,
+        "test_crops": crop_paths,
+    }

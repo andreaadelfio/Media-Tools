@@ -13,7 +13,7 @@ from .config import STATIC_DIR
 from .file_browser import image_thumbnail_path, media_info, scan_root, video_thumbnail_path
 from .services.audio_tools import run_birdnet_batch, run_birdnet_denoise
 from .services.audio_live_service import live_status, start_live_process, stop_live_process
-from .services.photo_tools import process_photo
+from .services.photo_tools import process_photo, process_photo_test
 from .services.stereo_tools import create_overlay, parse_point
 from .services.video_tools import convert_for_web, convert_gopro, create_gif, extract_frames, frame_preview, parse_roi
 from .state import SESSION
@@ -30,36 +30,25 @@ class RunPayload(BaseModel):
 
 
 def pick_directory_dialog(initial_dir: Path | None = None) -> str | None:
-    import subprocess
-
     start_dir = str((initial_dir or Path.home()).resolve())
-    script = f"""
-Add-Type -AssemblyName System.Windows.Forms
-$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
-$dialog.Description = 'Seleziona la cartella root della sessione'
-$dialog.ShowNewFolderButton = $false
-$dialog.SelectedPath = '{start_dir.replace("'", "''")}'
-if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {{
-  Write-Output $dialog.SelectedPath
-}}
-"""
-    result = subprocess.run(
-        [
-            "powershell",
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-STA",
-            "-Command",
-            script,
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        raise HTTPException(status_code=500, detail=result.stderr.strip() or "Dialog cartelle non disponibile.")
-    selected = result.stdout.strip()
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="Dialog cartelle non disponibile su questo Python.") from exc
+
+    try:
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        selected = filedialog.askdirectory(
+            initialdir=start_dir,
+            title="Seleziona la cartella root della sessione",
+            mustexist=True,
+        )
+        root.destroy()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Dialog cartelle non disponibile: {exc}") from exc
     return selected or None
 
 
@@ -136,6 +125,18 @@ def create_app() -> FastAPI:
         resolved = resolve_user_path(root_dir, path)
         return frame_preview(resolved, time_seconds)
 
+    @app.get("/api/live/log")
+    def get_live_log(lines: int = 80) -> dict:
+        status = live_status()
+        log_path = status.get("log_path")
+        if not log_path:
+            return {"running": status.get("running", False), "log": ""}
+        path = Path(log_path)
+        if not path.exists():
+            return {"running": status.get("running", False), "log": ""}
+        content = path.read_text(encoding="utf-8", errors="ignore").splitlines()
+        return {"running": status.get("running", False), "log": "\n".join(content[-lines:])}
+
     @app.get("/api/file")
     def serve_file(path: str) -> FileResponse:
         root_dir = _require_root()
@@ -175,18 +176,29 @@ def dispatch_tool(root_dir: Path, tool_id: str, payload: RunPayload) -> dict:
     if tool_id == "photo_naturalize":
         if not selected:
             raise ValueError("Seleziona almeno un'immagine.")
-        return {
-            "results": [
-                process_photo(
-                    source=path,
-                    output_dir=tool_output / path.stem,
-                    denoise=float(params.get("denoise", 1.4)),
-                    sharpen=float(params.get("sharpen", 1.4)),
-                    test_crops=bool(params.get("test_crops", False)),
+        mode = str(params.get("mode", "definitive"))
+        results = []
+        for path in selected:
+            if mode == "test":
+                results.append(
+                    process_photo_test(
+                        source=path,
+                        output_dir=tool_output / path.stem,
+                        probe_margin=float(params.get("probe_margin", 0.1)),
+                        test_crops=bool(params.get("test_crops", False)),
+                    )
                 )
-                for path in selected
-            ]
-        }
+            else:
+                results.append(
+                    process_photo(
+                        source=path,
+                        output_dir=tool_output / path.stem,
+                        denoise=float(params.get("denoise", 1.4)),
+                        sharpen=float(params.get("sharpen", 1.4)),
+                        test_crops=bool(params.get("test_crops", False)),
+                    )
+                )
+        return {"mode": mode, "results": results}
 
     if tool_id == "stereo_overlay":
         left_path = resolve_user_path(root_dir, params.get("left_path", ""))
@@ -209,6 +221,8 @@ def dispatch_tool(root_dir: Path, tool_id: str, payload: RunPayload) -> dict:
             start_time=float(params.get("start_time", 0)),
             end_time=float(params.get("end_time", 3)),
             roi=parse_roi(params.get("roi")),
+            remove_blurry=bool(params.get("remove_blurry", False)),
+            keep_best=(lambda raw: int(raw) if str(raw).strip() not in {"", "0", "None", "null"} else None)(params.get("keep_best", 0)),
         )
 
     if tool_id == "video_make_gif":
@@ -219,12 +233,13 @@ def dispatch_tool(root_dir: Path, tool_id: str, payload: RunPayload) -> dict:
             start_time=float(params.get("start_time", 0)),
             end_time=float(params.get("end_time", 3)),
             roi=parse_roi(params.get("roi")),
+            make_optimized=bool(params.get("make_optimized", True)),
         )
 
     if tool_id == "video_convert_web":
         if not selected:
             raise ValueError("Seleziona almeno un video.")
-        return {"results": [convert_for_web(path, tool_output / path.stem) for path in selected]}
+        return {"results": [convert_for_web(path, tool_output / path.stem, force=bool(params.get("force", False))) for path in selected]}
 
     if tool_id == "gopro_convert":
         video_path = resolve_user_path(root_dir, params.get("video_path", ""))

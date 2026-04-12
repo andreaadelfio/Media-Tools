@@ -15,86 +15,61 @@ Suite unica per esporre da browser i tool Python che manipolano immagini, video 
 
 ## Installazione consigliata
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\install.ps1
+Su Windows e Linux/macOS il flusso consigliato e' lo stesso:
+
+```bash
+make install
 ```
 
-Se PowerShell blocca gli script, puoi usare anche:
+Questo comando:
 
-```bat
-.\install_media_tools.bat
+- crea un virtual environment gestito fuori dal repository
+- usa una cartella utente locale:
+  Windows: `%LOCALAPPDATA%\MediaTools`
+  Linux: `${XDG_DATA_HOME:-~/.local/share}/media-tools`
+- aggiorna `pip`
+- installa il progetto in editable mode con `pip install -e .[dev]`
+
+In questo modo installazione e sviluppo usano lo stesso ambiente, senza snapshot separati del repository, senza `PYTHONPATH` forzati e senza riempire la cartella del repository su Dropbox con il venv e i pacchetti installati.
+
+Se non usi `make`, puoi ottenere lo stesso risultato anche con:
+
+```bash
+python -m media_tools.devtools install
 ```
 
-L'installer crea una installazione utente separata dal repository:
+## Avvio
 
-- cartella applicazione: `%LOCALAPPDATA%\MediaTools`
-- virtual environment: `%LOCALAPPDATA%\MediaTools\venv`
-- snapshot sorgente usato per installare: `%LOCALAPPDATA%\MediaTools\source`
-- artefatti build e metadati: `%LOCALAPPDATA%\MediaTools\build-artifacts` e `%LOCALAPPDATA%\MediaTools\source\media_tools.egg-info`
-- launcher globale: `%USERPROFILE%\.local\bin\media-tools.cmd`
-- alias globale aggiuntivo: `%USERPROFILE%\.local\bin\media_tools.cmd`
+Per l'uso standard:
 
-Se `%USERPROFILE%\.local\bin` o `%LOCALAPPDATA%\MediaTools\venv\Scripts` non sono gia nel `PATH` utente, l'installer li aggiunge automaticamente.
-
-Dopo l'installazione i comandi globali diventano:
-
-```powershell
-media-tools
-media_tools
+```bash
+make run
 ```
 
-Il launcher apre anche il browser su `http://127.0.0.1:8765` in automatico.
+Questo avvia l'app su `http://127.0.0.1:8765`.
 
-Se preferisci non aspettare un nuovo terminale, puoi usare subito:
+Per sviluppo sul repository corrente:
 
-```powershell
-$HOME\.local\bin\media-tools.cmd
-```
-
-oppure i launcher del repository:
-
-```powershell
-.\run_media_tools.bat
-.\media-tools.cmd
-```
-
-Per sviluppo sul repo corrente, senza reinstallare il venv utente a ogni modifica:
-
-```powershell
+```bash
 make dev
 ```
 
-oppure su Windows:
+`make dev` usa sempre il codice presente nel repository aperto, quindi ogni modifica locale viene vista subito. Di default gira su `http://127.0.0.1:8766`, cosi non collide con l'istanza standard.
 
-```powershell
-.\run_media_tools_dev.bat
+Per eseguire i test:
+
+```bash
+make test
 ```
 
-Questa modalita usa il Python del venv installato in `%LOCALAPPDATA%\MediaTools`, ma forza `PYTHONPATH` e working directory sul repository aperto, quindi usa direttamente il codice locale del repo.
-Per default gira su `http://127.0.0.1:8766`, cosi non collide con l'istanza standard su `8765`.
+## Avvio manuale senza make
 
-Questi launcher usano solo l'installazione utente dedicata e non creano o riusano un `.venv` locale nel repository.
-
-Se vuoi comunque attivare manualmente il venv installato:
-
-```powershell
-powershell -ExecutionPolicy Bypass -NoExit -Command "& '$env:LOCALAPPDATA\MediaTools\venv\Scripts\Activate.ps1'"
+```bash
+python -m media_tools.devtools install
+python -m media_tools.devtools run
 ```
 
-Oppure puoi evitare del tutto l'attivazione e lanciare direttamente:
-
-```powershell
-$env:LOCALAPPDATA\MediaTools\venv\Scripts\media-tools.exe
-```
-
-## Avvio manuale
-
-```powershell
-pip install -r requirements.txt
-python app.py
-```
-
-Poi apri `http://127.0.0.1:8765`.
+Se vuoi forzare una cartella diversa per il runtime gestito, puoi impostare `MEDIA_TOOLS_HOME`.
 
 ## Flusso
 
@@ -107,7 +82,10 @@ Poi apri `http://127.0.0.1:8765`.
 ## Note
 
 - La root selezionata viene limitata al backend corrente per evitare accessi fuori cartella.
+- Il pulsante `Sfoglia` usa il dialog di `tkinter`, quindi non richiede PowerShell o dipendenze extra; se il dialog non e' disponibile puoi sempre inserire la path manualmente.
 - Alcuni strumenti richiedono dipendenze esterne gia presenti, per esempio `ffmpeg` per certe conversioni video.
-- `requirements.txt` resta utile per installazioni rapide, ma per lavorare bene sul progetto conviene usare `install.ps1`, che crea l'installazione nella cartella utente, tiene fuori dal repo `build` e `*.egg-info`, e registra i launcher globali.
+- `requirements.txt` punta al progetto stesso in editable mode, cosi resta allineato al `pyproject.toml` e non duplica la lista dipendenze.
 - Il modulo `bird_audio_batch` usa BirdNET e nella suite installiamo direttamente `tensorflow` insieme alle altre dipendenze Python.
+- `bird_audio_live` ora usa un worker interno al package e non richiede piu la presenza di un repository fratello separato.
+- I vecchi alias runtime `MEDIA_BROWSER_*`, la cartella `workspace` e l'entrypoint `media-tools-dev` sono stati rimossi per tenere il progetto piu lineare.
 - Le thumbnail vengono cacheate nella home utente, in `~/.media-tools/thumbnails`, con indice in `~/.media-tools/thumbnail_index.json`, usando path, dimensione e timestamp del file sorgente per ritrovarle o rigenerarle quando serve.
